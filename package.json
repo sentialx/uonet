@@ -22,6 +22,7 @@
     "@types/node-forge": "0.7.6",
     "@types/uuid": "3.4.4",
     "axios": "0.18.0",
+    "body-parser": "1.18.3",
     "concurrently": "4.0.1",
     "express": "4.16.4",
     "node-forge": "0.7.6",
