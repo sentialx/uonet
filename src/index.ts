@@ -12,9 +12,19 @@ app.use(
 );
 
 app.get("/login", async (req, res) => {
-  const response = await login(req.body.pin, req.body.token, req.body.symbol);
-  res.send(response);
+  try {
+    const response = await login(
+      req.query.pin,
+      req.query.token,
+      req.query.symbol
+    );
+    res.send(response);
+  } catch (e) {
+    res.send({ error: e.message });
+  }
 });
+
+app.get("/timetable", async (req, res) => {});
 
 const server = app.listen(8080, () => {
   console.log("Listening...");

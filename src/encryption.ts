@@ -1,5 +1,5 @@
-import Crypto from "node-webcrypto-ossl";
-import forge from "node-forge";
+import * as Crypto from "node-webcrypto-ossl";
+import * as forge from "node-forge";
 
 const crypto = new Crypto();
 

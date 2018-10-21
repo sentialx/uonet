@@ -44,6 +44,8 @@ export const login = async (pin: number, token: string, symbol: string) => {
       },
     });
 
+    console.log(cert.data);
+
     if (cert.data.IsError) {
       throw new Error('UONET+ certificate obtaining failed');
     }
@@ -66,7 +68,7 @@ export const login = async (pin: number, token: string, symbol: string) => {
         RequestSignatureValue: await signContent(
           JSON.stringify(pupilListPost),
           CertyfikatPfx,
-          CertyfikatKlucz,
+          'CE75EA598C7743AD9B0B7328DED85B06',
         ),
         RequestCertificateKey: CertyfikatKlucz,
         'Content-Type': 'application/json; charset=UTF-8',
