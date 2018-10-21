@@ -1,0 +1,35 @@
+{
+  "name": "uonet-api",
+  "version": "1.0.0",
+  "description": "Nieoficjalne API do e-dziennika UONET+",
+  "main": "build/index.js",
+  "scripts": {
+    "watch": "concurrently \"tsc --watch\" \"nodemon .\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sential/uonet-api.git"
+  },
+  "author": "sential",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sential/uonet-api/issues"
+  },
+  "homepage": "https://github.com/sential/uonet-api#readme",
+  "devDependencies": {
+    "@types/express": "4.16.0",
+    "@types/node": "10.12.0",
+    "@types/node-forge": "0.7.6",
+    "@types/uuid": "3.4.4",
+    "axios": "0.18.0",
+    "concurrently": "4.0.1",
+    "express": "4.16.4",
+    "node-forge": "0.7.6",
+    "node-webcrypto-ossl": "1.0.38",
+    "nodemon": "1.18.4",
+    "tslint": "5.11.0",
+    "tslint-config-airbnb": "5.11.0",
+    "typescript": "3.1.3",
+    "uuid": "3.3.2"
+  }
+}
