@@ -1,29 +1,30 @@
-import * as Crypto from "node-webcrypto-ossl";
-import * as forge from "node-forge";
+import forge from 'node-forge';
 
-const crypto = new Crypto();
+const cryptoC = require('node-webcrypto-ossl');
+
+const crypto = new cryptoC();
 
 export function signContent(
   content: string,
   certificate: string,
-  password: string
+  password: string,
 ) {
   const p12Der = forge.util.decode64(certificate);
   const p12Asn1 = forge.asn1.fromDer(p12Der);
   const pkcs12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, password);
 
   return importCryptoKeyPkcs8(loadPrivateKey(pkcs12), true).then(
-    (cryptoKey: NodeWebcryptoOpenSSL.CryptoKey) =>
+    (cryptoKey: any) =>
       crypto.subtle
-        .sign("RSASSA-PKCS1-v1_5", cryptoKey, stringToArrayBuffer(content))
+        .sign('RSASSA-PKCS1-v1_5', cryptoKey, stringToArrayBuffer(content))
         .then((signature: ArrayBuffer) => {
           return forge.util.encode64(arrayBufferToString(signature));
-        })
+        }),
   );
 }
 
 function arrayBufferToString(buffer: ArrayBuffer) {
-  let binary = "";
+  let binary = '';
   const bytes = new Uint8Array(buffer);
   const len = bytes.byteLength;
   for (let i = 0; i < len; i += 1) {
@@ -80,15 +81,15 @@ function importCryptoKeyPkcs8(privateKey: ArrayBuffer, extractable: boolean) {
 
   // Import the webcrypto key
   return crypto.subtle.importKey(
-    "pkcs8",
+    'pkcs8',
     privateKeyInfoDerBuff,
     {
-      name: "RSASSA-PKCS1-v1_5",
+      name: 'RSASSA-PKCS1-v1_5',
       hash: {
-        name: "SHA-1"
-      }
+        name: 'SHA-1',
+      },
     },
     extractable,
-    ["sign"]
+    ['sign'],
   );
 }
