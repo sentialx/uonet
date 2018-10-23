@@ -1,133 +1,111 @@
 import axios from 'axios';
-import { v1 as uuidv1, v4 as uuidv4 } from 'uuid';
-import { signContent } from './encryption';
-import { time } from './utils';
+import { v1 as uuidv1 } from 'uuid';
 
-const APP_VERSION = '18.4.1.388';
+import { Account, Pupil } from 'src/models';
+import { getRequest, getRestApiURL } from './utils';
 
-export const getURL = async (code: string) => {
-  try {
-    const urlList = await axios.get(
-      'https://komponenty.vulcan.net.pl/UonetPlusMobile/RoutingRules.txt',
-    );
-    const urls = urlList.data.split(/\r\n/).map((e: string) => e.split(','));
-    const url = urls.filter(
-      (e: string[]) => e[0] === code.substring(0, 3),
-    )[0][1];
+export class API {
+  private accounts: { [key: string]: Account } = {};
 
-    return url;
-  } catch (err) {
-    throw err;
-  }
-};
+  public async request(accountId: number, body: any, method: string) {
+    try {
+      const account = this.accounts[accountId];
 
-export const login = async (pin: number, token: string, symbol: string) => {
-  try {
-    const code = token.substring(0, 3);
-    const url = await getURL(code);
+      if (!account) {
+        throw new Error("Couldn't find the account with given ID.");
+      }
 
-    const cert = await axios({
-      url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/Certyfikat`,
-      method: 'POST',
-      data: {
-        PIN: pin,
-        TokenKey: token,
-        AppVersion: APP_VERSION,
-        DeviceId: uuidv1(),
-        DeviceName: 'uonet-api#uonet-api',
-        DeviceNameUser: '',
-        DeviceDescription: '',
-        DeviceSystemType: 'Android',
-        DeviceSystemVersion: '7.1.0',
-        RemoteMobileTimeKey: time(),
-        TimeKey: time(),
-        RequestId: uuidv4(),
-        RemoteMobileAppVersion: APP_VERSION,
-        RemoteMobileAppName: 'VULCAN-Android-ModulUcznia',
-      },
-      headers: {
-        RequestMobileType: 'RegisterDevice',
-        'User-Agent': 'MobileUserAgent',
-        'Content-Type': 'application/json',
-      },
-    });
+      const url = `${account.baseURL}/mobile-api/Uczen.v3.Uczen/${method}`;
+      const req = await getRequest(
+        {
+          body,
+          url,
+        },
+        {
+          key: account.certificate.key,
+          pfx: account.certificate.pfx,
+        },
+      );
 
-    if (cert.data.IsError) {
-      throw new Error('UONET+ certificate obtaining failed');
+      const res = await axios(req);
+
+      return res.data;
+    } catch (e) {
+      throw e;
     }
-
-    const { CertyfikatPfx, CertyfikatKlucz } = cert.data.TokenCert;
-
-    const pupilListPost = {
-      RemoteMobileTimeKey: time(),
-      TimeKey: time() - 1,
-      RequestId: uuidv4(),
-      RemoteMobileAppVersion: APP_VERSION,
-      RemoteMobileAppName: 'VULCAN-Android-ModulUcznia',
-    };
-
-    const signatureValue = await signContent(
-      JSON.stringify(pupilListPost),
-      CertyfikatPfx,
-      'CE75EA598C7743AD9B0B7328DED85B06',
-    );
-
-    const pupilList = await axios({
-      url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/ListaUczniow`,
-      method: 'POST',
-      data: pupilListPost,
-      headers: {
-        RequestSignatureValue: signatureValue,
-        RequestCertificateKey: CertyfikatKlucz,
-        'Content-Type': 'application/json; charset=UTF-8',
-        'User-Agent': 'MobileUserAgent',
-      },
-    });
-
-    return {
-      symbol,
-      code,
-      certificatePfx: CertyfikatPfx,
-      certificateKey: CertyfikatKlucz,
-      pupilList: pupilList.data.Data,
-    };
-  } catch (err) {
-    throw err;
   }
-};
 
-export const request = async (
-  code: string,
-  symbol: string,
-  schoolSymbol: string,
-  certKey: string,
-  certPfx: string,
-  method: string,
-  postData: any,
-) => {
-  try {
-    const sig = await signContent(
-      JSON.stringify(postData),
-      certPfx,
-      'CE75EA598C7743AD9B0B7328DED85B06',
-    );
+  public async getTimetable(accountId: number) {
+    try {
+      const account = this.accounts[accountId];
+      const timetable = this.request(
+        accountId,
+        {
+          IdOkresKlasyfikacyjny: account.periodId,
+          IdUczen: account.id,
+          IdOddzial: account.branchId,
+        },
+        'PlanLekcjiZeZmianami',
+      );
 
-    const res = await axios({
-      data: postData,
-      headers: {
-        'User-Agent': 'MobileUserAgent',
-        'Content-Type': 'application/json; charset=UTF-8',
-        RequestCertificateKey: certKey,
-        RequestSignatureValue: sig,
-      },
-      method: 'POST',
-      url: `${await getURL(
-        code,
-      )}/${symbol}/${schoolSymbol}/mobile-api/Uczen.v3.Uczen/${method}`,
-    });
-
-    return res.data;
-  } catch (e) {
-    throw e;
+      return timetable;
+    } catch (e) {
+      throw e;
+    }
   }
-};
+
+  public async login(pin: number, token: string, symbol: string) {
+    try {
+      const code = token.substring(0, 3);
+      const url = await getRestApiURL(code);
+
+      const cert = await axios(
+        await getRequest({
+          body: {
+            PIN: pin,
+            TokenKey: token,
+            DeviceId: uuidv1(),
+            DeviceName: 'uonet-api#uonet-api',
+            DeviceNameUser: '',
+            DeviceDescription: '',
+            DeviceSystemType: 'Android',
+            DeviceSystemVersion: '7.1.0',
+          },
+          headers: {
+            RequestMobileType: 'RegisterDevice',
+          },
+          url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/Certyfikat`,
+        }),
+      );
+
+      if (cert.data.IsError) {
+        throw new Error('UONET+ certificate obtaining failed');
+      }
+
+      const { CertyfikatPfx, CertyfikatKlucz } = cert.data.TokenCert;
+
+      const pupilList = await axios(
+        await getRequest({
+          url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/ListaUczniow`,
+        }),
+      );
+
+      pupilList.data.Data.forEach((pupil: Pupil) => {
+        const account: Account = {
+          baseURL: `${url}/${symbol}/${pupil.JednostkaSprawozdawczaSymbol}`,
+          id: pupil.Id,
+          certificate: {
+            key: CertyfikatKlucz,
+            pfx: CertyfikatPfx,
+          },
+          branchId: pupil.IdOddzial,
+          periodId: pupil.IdOkresKlasyfikacyjny,
+        };
+
+        this.accounts[account.id] = account;
+      });
+    } catch (err) {
+      throw err;
+    }
+  }
+}

@@ -1,8 +1,7 @@
 import forge from 'node-forge';
+import Crypto from 'node-webcrypto-ossl';
 
-const cryptoC = require('node-webcrypto-ossl');
-
-const crypto = new cryptoC();
+const crypto = new Crypto();
 
 export function signContent(
   content: string,
