@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Nieoficjalne SDK do e-dziennika UONET+",
   "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
     "watch": "tsc --watch",
     "build": "tsc"
