@@ -1,3 +1,4 @@
-import { getTime } from 'date-fns';
+import { getUnixTime } from 'date-fns';
 
-export const time = () => getTime(new Date());
+export const time = () => getUnixTime(new Date());
+
