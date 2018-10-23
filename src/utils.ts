@@ -1,4 +1,3 @@
-import { getUnixTime } from 'date-fns';
+const { getUnixTime } = require('date-fns');
 
 export const time = () => getUnixTime(new Date());
-

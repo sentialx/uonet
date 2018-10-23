@@ -25,7 +25,7 @@
     "axios": "0.18.0",
     "body-parser": "1.18.3",
     "concurrently": "4.0.1",
-    "date-fns": "1.29.0",
+    "date-fns": "2.0.0-alpha.24",
     "express": "4.16.4",
     "node-forge": "0.7.6",
     "node-webcrypto-ossl": "1.0.38",
