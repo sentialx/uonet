@@ -1,15 +1,17 @@
 import axios from 'axios';
 import { v1 as uuidv1 } from 'uuid';
 
-import { Account, Pupil } from 'src/models';
-import { getRequest, getRestApiURL } from './utils';
+import { Account, UONETPupil, UONETLesson, Lesson } from './models';
+import { getRestApiURL, getRequest } from './utils/requests';
+import { APP_VERSION } from './constants';
+import { getUnixTime } from 'date-fns';
 
-export class API {
-  private accounts: { [key: string]: Account } = {};
+export class UONET {
+  private accounts: Account[] = [];
 
   public async request(accountId: number, body: any, method: string) {
     try {
-      const account = this.accounts[accountId];
+      const account = this.accounts.find(x => x.id === accountId);
 
       if (!account) {
         throw new Error("Couldn't find the account with given ID.");
@@ -35,18 +37,55 @@ export class API {
     }
   }
 
-  public async getTimetable(accountId: number) {
+  public async getTimetable(accountId: number, from: string, to: string) {
     try {
-      const account = this.accounts[accountId];
-      const timetable = this.request(
+      const account = this.accounts.find(x => x.id === accountId);
+      let data: UONETLesson[] = (await this.request(
         accountId,
         {
           IdOkresKlasyfikacyjny: account.periodId,
           IdUczen: account.id,
           IdOddzial: account.branchId,
+          DataPoczatkowa: from,
+          DataKoncowa: to,
         },
         'PlanLekcjiZeZmianami',
-      );
+      )).Data;
+      const dictionary = (await this.request(accountId, {}, 'Slowniki')).Data;
+
+      data = data.sort((a, b) => {
+        return a.NumerLekcji - b.NumerLekcji;
+      });
+
+      const timetable: Lesson[] = data.map(item => {
+        const teacher = dictionary.Nauczyciele.find(
+          (x: any) => x.Id === item.IdPracownik,
+        );
+
+        const hour = dictionary.PoryLekcji.find(
+          (x: any) => x.Id === item.IdPoraLekcji,
+        );
+
+        const start = new Date(`${item.DzienTekst} ${hour.PoczatekTekst}:00`);
+        const end = new Date(`${item.DzienTekst} ${hour.KoniecTekst}:00`);
+
+        const lesson: Lesson = {
+          name: item.PrzedmiotNazwa,
+          order: item.NumerLekcji,
+          room: item.Sala,
+          teacher: {
+            firstName: teacher.Imie,
+            lastName: teacher.Nazwisko,
+          },
+          date: {
+            start,
+            end,
+          },
+          note: item.AdnotacjaOZmianie,
+        };
+
+        return lesson;
+      });
 
       return timetable;
     } catch (e) {
@@ -54,43 +93,51 @@ export class API {
     }
   }
 
-  public async login(pin: number, token: string, symbol: string) {
+  public async login(pin: string, token: string, symbol: string) {
     try {
       const code = token.substring(0, 3);
       const url = await getRestApiURL(code);
 
-      const cert = await axios(
-        await getRequest({
-          body: {
-            PIN: pin,
-            TokenKey: token,
-            DeviceId: uuidv1(),
-            DeviceName: 'uonet-api#uonet-api',
-            DeviceNameUser: '',
-            DeviceDescription: '',
-            DeviceSystemType: 'Android',
-            DeviceSystemVersion: '7.1.0',
-          },
-          headers: {
-            RequestMobileType: 'RegisterDevice',
-          },
-          url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/Certyfikat`,
-        }),
-      );
+      const req = await getRequest({
+        body: {
+          PIN: parseInt(pin, 10),
+          TokenKey: token,
+          DeviceId: uuidv1(),
+          DeviceName: 'uonet-api#uonet-api',
+          DeviceNameUser: '',
+          DeviceDescription: '',
+          DeviceSystemType: 'Android',
+          DeviceSystemVersion: '7.1.0',
+          AppVersion: APP_VERSION,
+        },
+        headers: {
+          RequestMobileType: 'RegisterDevice',
+        },
+        url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/Certyfikat`,
+      });
+
+      const cert = await axios(req);
 
       if (cert.data.IsError) {
+        console.log(req.data);
         throw new Error('UONET+ certificate obtaining failed');
       }
 
       const { CertyfikatPfx, CertyfikatKlucz } = cert.data.TokenCert;
 
       const pupilList = await axios(
-        await getRequest({
-          url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/ListaUczniow`,
-        }),
+        await getRequest(
+          {
+            url: `${url}/${symbol}/mobile-api/Uczen.v3.UczenStart/ListaUczniow`,
+          },
+          {
+            key: CertyfikatKlucz,
+            pfx: CertyfikatPfx,
+          },
+        ),
       );
 
-      pupilList.data.Data.forEach((pupil: Pupil) => {
+      pupilList.data.Data.forEach((pupil: UONETPupil) => {
         const account: Account = {
           baseURL: `${url}/${symbol}/${pupil.JednostkaSprawozdawczaSymbol}`,
           id: pupil.Id,
@@ -102,7 +149,7 @@ export class API {
           periodId: pupil.IdOkresKlasyfikacyjny,
         };
 
-        this.accounts[account.id] = account;
+        this.accounts.push(account);
       });
     } catch (err) {
       throw err;

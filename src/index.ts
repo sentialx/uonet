@@ -1,3 +1,3 @@
-import { API } from './api';
+import { UONET } from './api';
 
-export { API };
+export { UONET };

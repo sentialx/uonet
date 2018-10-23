@@ -1,4 +1,4 @@
-export interface Pupil {
+export interface UONETPupil {
   JednostkaSprawozdawczaSymbol: string;
   Id: number;
   IdOddzial: number;

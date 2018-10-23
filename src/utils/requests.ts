@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
-import { RequestBaseData, Certificate } from 'src/models';
-import { APP_VERSION, PASSWORD, APP_NAME } from 'src/constants';
-import { getTimestamp, signContent } from '.';
+import { RequestBaseData, Certificate } from '../models';
+import { APP_VERSION, PASSWORD, APP_NAME } from '../constants';
+import { getTimestamp } from './time';
+import { signContent } from './encryption';
 
 export const getRestApiURL = async (code: string) => {
   try {
@@ -27,8 +28,7 @@ export const getRequest = async (
 ) => {
   try {
     const requestBase = {
-      ...data,
-      body: {
+      data: {
         ...data.body,
         RemoteMobileTimeKey: getTimestamp(),
         TimeKey: getTimestamp() - 1,
@@ -49,7 +49,7 @@ export const getRequest = async (
       requestBase.headers.RequestCertificateKey = certificate.key;
 
       requestBase.headers.RequestSignatureValue = await signContent(
-        JSON.stringify(requestBase.body),
+        JSON.stringify(requestBase.data),
         certificate.pfx,
         PASSWORD,
       );
