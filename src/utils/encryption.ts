@@ -1,5 +1,7 @@
 import forge from 'node-forge';
-import Crypto from 'node-webcrypto-ossl';
+
+// tslint:disable-next-line
+const Crypto = require("node-webcrypto-ossl");
 
 const crypto = new Crypto();
 
