@@ -82,6 +82,7 @@ export class UONET {
             end,
           },
           note: item.AdnotacjaOZmianie,
+          isForPupil: item.PlanUcznia,
         };
 
         return lesson;
