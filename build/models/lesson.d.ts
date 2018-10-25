@@ -30,4 +30,5 @@ export interface Lesson {
         lastName: string;
     };
     note: string;
+    isForPupil: boolean;
 }
