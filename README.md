@@ -1,4 +1,4 @@
-# uonet.js
+# uonet
 
 Nieoficjalne SDK do e-dziennika UONET+ napisane w Node.js.
 
@@ -7,13 +7,13 @@ Nieoficjalne SDK do e-dziennika UONET+ napisane w Node.js.
 Upewnij się, że na Twoim komputerze jest Node.js zainstalowane, a następnie uruchom poniższą komendę:
 
 ```bash
-$ npm install uonet-sdk
+$ npm install uonet
 ```
 
 # Przykład
 
 ```javascript
-const { UONET } = require("uonet-sdk");
+const { UONET } = require("uonet");
 
 const uonet = new UONET();
 
