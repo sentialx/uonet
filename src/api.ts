@@ -7,7 +7,7 @@ import { APP_VERSION } from './constants';
 import { getUnixTime } from 'date-fns';
 
 export class UONET {
-  private accounts: Account[] = [];
+  public accounts: Account[] = [];
 
   public async request(accountId: number, body: any, method: string) {
     try {
