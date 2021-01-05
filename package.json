@@ -27,7 +27,7 @@
     "@types/node": "10.12.0",
     "@types/node-forge": "0.7.6",
     "@types/uuid": "3.4.4",
-    "axios": "0.18.0",
+    "axios": "0.21.1",
     "date-fns": "2.0.0-alpha.24",
     "node-forge": "0.7.6",
     "node-webcrypto-ossl": "1.0.38",
